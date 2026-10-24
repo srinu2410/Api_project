@@ -1,0 +1,141 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Employee Management</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 650px;
+      margin: 40px auto;
+      padding: 0 16px;
+      color: #222;
+    }
+    form {
+      display: grid;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    input, button {
+      padding: 12px;
+      font-size: 16px;
+    }
+    button {
+      cursor: pointer;
+      background: #1769aa;
+      color: white;
+      border: 0;
+      border-radius: 4px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+    #message { margin: 12px 0; }
+  </style>
+</head>
+<body>
+  <h1>Employee Management</h1>
+
+  <form id="employeeForm">
+    <input name="name" placeholder="Employee name"
+           maxlength="100" required>
+    <input name="company" placeholder="Company"
+           maxlength="150" required>
+    <input name="salary" type="number" placeholder="Salary"
+           min="0" max="9999999999.99" step="0.01" required>
+    <button type="submit">Save Employee</button>
+  </form>
+
+  <p id="message" role="status"></p>
+
+  <h2>Employees</h2>
+  <button id="refresh" type="button">Refresh employees</button>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th><th>Name</th><th>Company</th><th>Salary</th>
+      </tr>
+    </thead>
+    <tbody id="employees"></tbody>
+  </table>
+
+  <script>
+    const form = document.getElementById("employeeForm");
+    const message = document.getElementById("message");
+    const tbody = document.getElementById("employees");
+
+    async function loadEmployees() {
+      try {
+        const response = await fetch("/api/employees");
+        if (!response.ok) throw new Error("Could not load employees");
+
+        const employees = await response.json();
+        tbody.replaceChildren();
+
+        for (const employee of employees) {
+          const row = document.createElement("tr");
+
+          for (const value of [
+            employee.Id,
+            employee.Name,
+            employee.Company,
+            Number(employee.Salary).toFixed(2)
+          ]) {
+            const cell = document.createElement("td");
+            cell.textContent = value;
+            row.appendChild(cell);
+          }
+
+          tbody.appendChild(row);
+        }
+      } catch (error) {
+        message.textContent = error.message;
+      }
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      message.textContent = "Saving...";
+
+      const data = {
+        name: form.elements.name.value,
+        company: form.elements.company.value,
+        salary: form.elements.salary.value
+      };
+
+      try {
+        const response = await fetch("/api/employees", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(result.error || "Insert failed");
+        }
+
+        message.textContent = "Employee saved successfully!";
+        form.reset();
+        await loadEmployees();
+      } catch (error) {
+        message.textContent = error.message;
+      }
+    });
+
+    document.getElementById("refresh")
+      .addEventListener("click", loadEmployees);
+
+    loadEmployees();
+  </script>
+</body>
+</html>
+

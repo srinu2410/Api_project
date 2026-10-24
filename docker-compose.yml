@@ -1,0 +1,41 @@
+
+services:
+  mssql:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mssql-server
+    hostname: mssql-server
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: Developer
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD}"
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql_data:/var/opt/mssql
+    restart: unless-stopped
+    stop_grace_period: 1m
+
+  employee-api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: employee-api
+    environment:
+      DB_USER: sa
+      DB_PASSWORD: "${MSSQL_SA_PASSWORD}"
+      DB_SERVER: mssql
+      DB_PORT: "1433"
+      DB_NAME: EmployeeDB
+      PORT: "3000"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mssql
+    restart: unless-stopped
+
+
+volumes:
+  mssql_data:
+
